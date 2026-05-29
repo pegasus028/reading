@@ -1,0 +1,598 @@
+# CEFR Adaptive Reading Assessment — source code
+
+This file contains the complete, ready-to-deploy code for your reading test,
+plus instructions for putting it on GitHub Pages.
+
+---
+
+## Fastest method: upload the file directly
+
+1. Download `index.html` (the file shared in the chat alongside this one).
+2. Go to your repository: `https://github.com/pegasus028/reading`
+3. Click **Add file -> Upload files**.
+4. Drag `index.html` into the page (if one already exists, this replaces it).
+5. Scroll down and click **Commit changes**.
+6. Wait 1-2 minutes. Your test will be live at `https://pegasus028.github.io/reading/`
+
+---
+
+## Alternative: edit on GitHub by pasting
+
+1. Go to `https://github.com/pegasus028/reading`
+2. Click `index.html`, then the pencil icon (**Edit this file**).
+3. Select all existing content (Ctrl+A / Cmd+A) and delete it.
+4. Copy the ENTIRE code block below and paste it in.
+5. Click **Commit changes**.
+
+> Tip: use the copy button at the top-right of the code block so you copy all
+> of it in one go. Make sure you get everything from `<!DOCTYPE html>` down to
+> the final `</html>`.
+
+---
+
+## Complete code
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CEFR Adaptive Reading Assessment</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --ink: #1c1a17;
+        --ink-soft: #57514a;
+        --ink-faint: #8a827a;
+        --paper: #faf7f2;
+        --card: #fffdf9;
+        --line: #e7e0d5;
+        --line-strong: #d8cfc0;
+        --accent: #9a3412;
+        --accent-soft: #c2613a;
+        --accent-wash: #fbeee6;
+        --gold: #b08400;
+        --good: #3f6212;
+        --good-wash: #f0f4e6;
+        --shadow: 0 1px 2px rgba(60,48,32,.04), 0 8px 30px rgba(60,48,32,.07);
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+        font-family: "Inter", system-ui, sans-serif;
+        background: var(--paper);
+        background-image: radial-gradient(circle at 18% 12%, #fff 0, transparent 38%), radial-gradient(circle at 85% 88%, #f4ede1 0, transparent 45%);
+        color: var(--ink);
+        line-height: 1.65;
+        margin: 0;
+        padding: 32px 18px 64px;
+        min-height: 100vh;
+    }
+    .container {
+        max-width: 720px;
+        margin: 0 auto;
+        background: var(--card);
+        padding: 0;
+        border-radius: 18px;
+        border: 1px solid var(--line);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+    .inner { padding: clamp(26px, 5vw, 52px); }
+    .eyebrow {
+        font-size: .72rem; letter-spacing: .22em; text-transform: uppercase;
+        color: var(--accent); font-weight: 600; margin: 0 0 14px;
+    }
+    h1 {
+        font-family: "Fraunces", serif; font-weight: 600; font-size: clamp(2rem, 6vw, 2.9rem);
+        line-height: 1.05; letter-spacing: -.01em; margin: 0 0 18px; color: var(--ink);
+    }
+    h2 { font-family: "Fraunces", serif; font-weight: 600; font-size: 1.7rem; margin: 0 0 10px; }
+    .lede { font-size: 1.06rem; color: var(--ink-soft); margin: 0 0 16px; max-width: 52ch; }
+    .meta-note {
+        font-size: .9rem; color: var(--ink-faint); display: flex; gap: 10px; align-items: flex-start;
+        background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin: 26px 0 30px;
+    }
+    .meta-note svg { flex: none; margin-top: 3px; }
+
+    /* progress */
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px clamp(26px,5vw,52px); border-bottom: 1px solid var(--line); background: linear-gradient(var(--card), var(--card)); }
+    .stage-label { font-size: .78rem; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-faint); font-weight: 600; }
+    .stage-label b { color: var(--accent); font-weight: 600; }
+    .pips { display: flex; gap: 7px; }
+    .pip { width: 9px; height: 9px; border-radius: 50%; background: var(--line-strong); transition: all .4s ease; }
+    .pip.done { background: var(--accent-soft); }
+    .pip.active { background: var(--accent); box-shadow: 0 0 0 4px var(--accent-wash); transform: scale(1.15); }
+
+    .passage-box {
+        background: linear-gradient(180deg, #fffefb, #fdfaf4);
+        border: 1px solid var(--line);
+        border-left: 3px solid var(--accent);
+        border-radius: 12px;
+        padding: 26px 30px;
+        margin: 6px 0 34px;
+    }
+    .passage-box p {
+        font-family: "Newsreader", Georgia, serif;
+        font-size: 1.24rem; line-height: 1.72; color: #2a2722; margin: 0;
+    }
+    .passage-box b {
+        font-weight: 600; color: var(--accent);
+    }
+    .hint { font-size: .82rem; color: var(--ink-faint); margin: -26px 0 30px; display: flex; align-items: center; gap: 7px; }
+    .hint .swatch { font-family: "Newsreader", serif; font-weight: 600; color: var(--accent); }
+
+    .question-block { margin-bottom: 26px; }
+    .qhead { display: flex; gap: 12px; align-items: baseline; margin-bottom: 14px; }
+    .qnum {
+        font-family: "Fraunces", serif; font-weight: 600; font-size: .95rem; color: #fff;
+        background: var(--accent); min-width: 26px; height: 26px; border-radius: 7px;
+        display: inline-flex; align-items: center; justify-content: center; flex: none; margin-top: 1px;
+    }
+    .qtext { font-weight: 500; font-size: 1.04rem; color: var(--ink); }
+    .qtext code { font-family: "Newsreader", serif; font-style: italic; font-size: 1.05em; background: var(--accent-wash); color: var(--accent); padding: 0 5px; border-radius: 4px; }
+    .options { display: grid; gap: 9px; }
+    .opt {
+        display: flex; align-items: center; gap: 13px; cursor: pointer;
+        padding: 13px 16px; border-radius: 10px; background: var(--card);
+        border: 1.5px solid var(--line); transition: border-color .18s, background .18s, transform .08s;
+        font-size: .98rem;
+    }
+    .opt:hover { border-color: var(--accent-soft); background: #fffaf6; }
+    .opt:active { transform: scale(.992); }
+    .opt input { position: absolute; opacity: 0; pointer-events: none; }
+    .dot { width: 19px; height: 19px; border-radius: 50%; border: 2px solid var(--line-strong); flex: none; display: inline-flex; align-items: center; justify-content: center; transition: border-color .18s; }
+    .opt:hover .dot { border-color: var(--accent-soft); }
+    .opt.sel { border-color: var(--accent); background: var(--accent-wash); }
+    .opt.sel .dot { border-color: var(--accent); }
+    .opt.sel .dot::after { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--accent); }
+    .opt-letter { font-size: .78rem; color: var(--ink-faint); font-weight: 600; min-width: 14px; }
+    .opt.sel .opt-letter { color: var(--accent); }
+
+    .error {
+        color: var(--accent); font-size: .92rem; margin: 18px 0 0; font-weight: 500;
+        background: var(--accent-wash); border: 1px solid #f0d3c4; border-radius: 9px; padding: 11px 15px;
+        display: flex; align-items: center; gap: 9px;
+    }
+    button {
+        font-family: "Inter", sans-serif; background: var(--ink); color: #fff; border: none;
+        padding: 16px 28px; font-size: 1.02rem; border-radius: 11px; cursor: pointer; font-weight: 600;
+        display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+        width: 100%; margin-top: 30px; transition: background .2s, transform .08s; letter-spacing: .01em;
+    }
+    button:hover { background: var(--accent); }
+    button:active { transform: scale(.99); }
+    button svg { transition: transform .2s; }
+    button:hover svg { transform: translateX(3px); }
+
+    /* results */
+    #results-screen { text-align: center; }
+    .result-badge { display: inline-block; font-size: .72rem; letter-spacing: .2em; text-transform: uppercase; color: var(--good); background: var(--good-wash); border: 1px solid #d8e4bf; padding: 6px 14px; border-radius: 20px; font-weight: 600; margin-bottom: 8px; }
+    .final-score {
+        font-family: "Fraunces", serif; font-size: clamp(3.4rem, 14vw, 5.2rem); font-weight: 600;
+        color: var(--accent); margin: 10px 0 14px; line-height: 1; letter-spacing: -.02em;
+    }
+    .feedback-text { font-size: 1.08rem; color: var(--ink-soft); max-width: 46ch; margin: 0 auto 8px; }
+    .scale {
+        display: flex; gap: 4px; justify-content: center; margin: 30px auto 8px; max-width: 380px;
+    }
+    .scale .step { flex: 1; text-align: center; font-size: .74rem; font-weight: 600; color: var(--ink-faint); padding: 7px 2px; border-radius: 7px; background: var(--paper); border: 1px solid var(--line); }
+    .scale .step.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .restart { margin-top: 30px; }
+    .restart button { background: transparent; color: var(--ink-soft); border: 1.5px solid var(--line-strong); }
+    .restart button:hover { background: var(--paper); color: var(--accent); border-color: var(--accent-soft); }
+
+    .improve { text-align: left; margin: 38px 0 0; padding: 28px 26px; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; }
+    .improve-title { font-family: "Fraunces", serif; font-weight: 600; font-size: 1.25rem; margin: 0 0 6px; color: var(--ink); }
+    .improve-sub { font-size: .96rem; color: var(--ink-soft); margin: 0 0 18px; }
+    .focus-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+    .focus-list li { display: flex; gap: 13px; align-items: flex-start; }
+    .focus-list .fnum { flex: none; width: 24px; height: 24px; border-radius: 7px; background: var(--accent-wash); color: var(--accent); font-weight: 600; font-size: .82rem; display: inline-flex; align-items: center; justify-content: center; margin-top: 2px; }
+    .focus-list .fbody { font-size: .96rem; color: var(--ink); line-height: 1.55; }
+    .focus-list .fbody b { font-weight: 600; color: var(--ink); }
+    .focus-list .fbody span { color: var(--ink-soft); }
+
+    .contact { text-align: left; margin: 22px 0 0; padding: 24px 26px; background: linear-gradient(180deg, #fffdf9, #fbeee6); border: 1px solid #f0d9cb; border-radius: 14px; }
+    .contact-lead { font-family: "Fraunces", serif; font-weight: 600; font-size: 1.12rem; margin: 0 0 6px; color: var(--accent); }
+    .contact-body { font-size: .98rem; color: var(--ink-soft); margin: 0; line-height: 1.6; }
+    .contact-body a { color: var(--accent); font-weight: 600; text-decoration: none; border-bottom: 1px solid var(--accent-soft); }
+    .contact-body a:hover { color: var(--accent-soft); }
+    .contact-body b { color: var(--ink); font-weight: 600; }
+
+    .fade { animation: fade .45s ease both; }
+    @keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    .hidden { display: none; }
+    @media (max-width: 520px) {
+        .passage-box { padding: 20px 18px; }
+        .passage-box p { font-size: 1.12rem; }
+        .inner { padding: 26px 20px; }
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Intro -->
+    <div id="intro-screen" class="inner fade">
+        <p class="eyebrow">Reading Proficiency · CEFR A1–C1</p>
+        <h1>Adaptive Reading Assessment</h1>
+        <p class="lede">Each passage adapts to your answers. Read carefully — the difficulty of the next text rises or falls based on how accurately you respond.</p>
+        <div class="meta-note">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8a827a" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg>
+            <span>Answer all five questions on each screen before continuing. Bold words in the passage mark the specific word each question asks about. Please don't use outside resources.</span>
+        </div>
+        <button onclick="startTest()">Begin assessment <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+    </div>
+
+    <!-- Test -->
+    <div id="test-screen" class="hidden">
+        <div class="topbar">
+            <span class="stage-label" id="stage-label">Passage <b id="stage-num">1</b></span>
+            <div class="pips" id="pips"></div>
+        </div>
+        <div class="inner">
+            <div id="passage-container" class="passage-box"></div>
+            <div class="hint"><span class="swatch">word</span> &nbsp;Bold words in the passage are the ones asked about below.</div>
+            <div id="questions-container"></div>
+            <p id="validation-error" class="error hidden">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 8v5M12 16.5v.01"/><circle cx="12" cy="12" r="9"/></svg>
+                Please answer all five questions before continuing.
+            </p>
+            <button id="next-btn" onclick="submitNode()">Next passage <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+        </div>
+    </div>
+
+    <!-- Results -->
+    <div id="results-screen" class="hidden inner">
+        <span class="result-badge">Assessment complete</span>
+        <h2>Your reading level</h2>
+        <div id="final-level" class="final-score"></div>
+        <p id="feedback-text" class="feedback-text"></p>
+        <div class="scale" id="scale"></div>
+
+        <div class="improve" id="improve">
+            <h3 class="improve-title">Where to focus next</h3>
+            <p class="improve-sub" id="improve-sub"></p>
+            <ul class="focus-list" id="focus-list"></ul>
+        </div>
+
+        <div class="contact">
+            <p class="contact-lead">Ready to take the next step?</p>
+            <p class="contact-body">Please contact <b>Christopher Mah</b> at <a href="tel:0823459615">082-345-9615</a> or Line ID: <b>pegasus028</b> for further information or to book a trial tutoring lesson.</p>
+        </div>
+
+        <div class="restart"><button onclick="restart()">Take the test again</button></div>
+    </div>
+</div>
+
+<script>
+    const testBank = {
+        'A1_Route': {
+            passage: "Welcome to the Grand Hotel. Breakfast is served in the dining room from seven until ten in the morning. Please do not take food to your bedrooms. The swimming pool is open all day, but children must have an adult with <b>them</b>. If you need <b>clean</b> towels, please call the front desk. Enjoy your stay!",
+            questions: [
+                { q: "What is this text?", options: ["A map", "A menu", "Hotel rules", "A train ticket"], answer: 2 },
+                { q: "When does breakfast end?", options: ["7:00 AM", "10:00 AM", "At noon today", "Late in the day"], answer: 1 },
+                { q: "What must children have at the pool?", options: ["A toy", "A towel", "An adult", "Some warm food"], answer: 2 },
+                { q: "In the text, who does the word 'them' refer to?", options: ["Adults", "The towels", "The children", "People working"], answer: 2 },
+                { q: "What does the word 'clean' mean in this text?", options: ["Wet", "Cold", "Not dirty", "Very expensive"], answer: 2 }
+            ]
+        },
+        'A1_Confirm': {
+            passage: "The city library is closing early today. <b>We</b> will close at 4:00 PM because of heavy snow. All afternoon reading groups are <b>canceled</b>. Please return your books to the box outside the front door. <b>We</b> will open again tomorrow morning at 9:00 AM. Thank you and stay safe!",
+            questions: [
+                { q: "What is the main purpose of this message?", options: ["A storm", "Buying books", "Closing early", "Morning groups"], answer: 2 },
+                { q: "What time will the library close today?", options: ["4:00 PM", "Next day", "Afternoon", "At 9:00 AM"], answer: 0 },
+                { q: "What should people do with their books?", options: ["Keep them", "Bring inside", "Give to staff", "Put in the box"], answer: 3 },
+                { q: "Who does the word 'We' refer to in the text?", options: ["The snow", "The library", "Library users", "The front door"], answer: 1 },
+                { q: "What does the word 'canceled' mean here?", options: ["Late", "Moved", "Stopped", "Finished"], answer: 2 }
+            ]
+        },
+        'A2_Route': {
+            passage: "All staff must attend a short safety meeting on Wednesday afternoon at 2:00 PM. We will meet in the staff kitchen because the main conference room is <b>currently</b> being painted. The manager will explain the new fire alarm system. Please bring a pen to sign the attendance sheet. You do not need to bring your laptops. If you are sick on Wednesday, you must email <b>Sarah</b> before noon.",
+            questions: [
+                { q: "What is the purpose of this text?", options: ["Buy paint", "Test an alarm", "Meeting notice", "Laptop complaints"], answer: 2 },
+                { q: "Where will the meeting take place?", options: ["At home", "In the kitchen", "Near front door", "In conference room"], answer: 1 },
+                { q: "Why was the location of the meeting changed?", options: ["Locked", "Too cold", "Being painted", "Alarms ringing"], answer: 2 },
+                { q: "In the final sentence, who is 'Sarah'?", options: ["A cook", "A painter", "Someone to email", "The kitchen cleaner"], answer: 2 },
+                { q: "What does the word 'currently' mean in this text?", options: ["Later", "Right now", "In the past", "Very quickly"], answer: 1 }
+            ]
+        },
+        'A2_Confirm': {
+            passage: "Hi David. I left my blue winter jacket in your car yesterday. I think it is in the back seat. My house keys are in the pocket, so I cannot <b>get inside</b> my apartment. Can you please check your car and call me? I can walk to your office to get <b>it</b> this afternoon. Thanks, Sarah.",
+            questions: [
+                { q: "What is the main topic of this message?", options: ["Buying a car", "A lost jacket", "Walking to work", "Fixing an apartment"], answer: 1 },
+                { q: "Where exactly are the writer's keys?", options: ["At home", "In the car", "In a pocket", "At the office"], answer: 2 },
+                { q: "Who lost the item?", options: ["David", "Her boss", "The writer", "Work friends"], answer: 2 },
+                { q: "In the final sentence, what does 'it' refer to?", options: ["The car", "The keys", "The jacket", "The building"], answer: 2 },
+                { q: "What does the phrase 'get inside' mean here?", options: ["See", "Walk", "Enter", "Tidy up"], answer: 2 }
+            ]
+        },
+        'B1_Route': {
+            passage: "Urban beekeeping has become a popular hobby for city residents who want to support local ecosystems. Rather than needing a large farm, people are placing small wooden hives on apartment balconies and rooftops. Bees travel up to three miles to find nectar in city parks and window boxes. While some neighbors worry about bee stings, experienced keepers state that honeybees are generally calm and only attack if they feel <b>their</b> hive is <b>threatened</b>. This practice not only provides owners with fresh honey but also helps pollinate urban gardens.",
+            questions: [
+                { q: "What is the text primarily about?", options: ["Selling honey", "City beekeeping", "Designing gardens", "Treating bee stings"], answer: 1 },
+                { q: "How far will the bees fly to find food?", options: ["Three miles", "Just the roof", "Across country", "Outside the hive"], answer: 0 },
+                { q: "What can we guess about urban gardens based on the text?", options: ["Very dry", "Benefit from bees", "Are mostly crowded", "Have zero live plants"], answer: 1 },
+                { q: "What does the word 'their' refer to in the fourth sentence?", options: ["The parks", "The honeybees", "City neighbors", "Skilled beekeepers"], answer: 1 },
+                { q: "What does the word 'threatened' mean in this context?", options: ["Lost", "Asleep", "In danger", "Very hungry"], answer: 2 }
+            ]
+        },
+        'B1_Confirm': {
+            passage: "Recent studies suggest that taking micro-breaks during intense study sessions can significantly improve focus. A micro-break is a brief pause, lasting between thirty seconds and five minutes, taken every hour. Instead of checking social media, experts advise students to stand up, stretch, or look at a distant object. Doing <b>this</b> reduces eye strain and prevents mental fatigue. While some students worry that frequent pauses will disrupt their workflow, researchers found the opposite to be true. Those who <b>used</b> the strategy completed their assignments faster than those who studied without stopping.",
+            questions: [
+                { q: "What is the main purpose of the text?", options: ["Eye exercises", "Warning students", "Banning social media", "Value of micro-breaks"], answer: 3 },
+                { q: "According to the text, how long can a micro-break last?", options: ["One hour", "Thirty minutes", "At least one hour", "Up to five minutes"], answer: 3 },
+                { q: "In the fourth sentence, what does the word 'this' refer to?", options: ["Eye strain", "Mental fatigue", "Checking phones", "Taking a short break"], answer: 3 },
+                { q: "What does the word 'used' replace from the previous sentence?", options: ["Worried", "Disrupted", "Studied hard", "Applied the method"], answer: 3 },
+                { q: "What can be inferred about students who study without stopping?", options: ["Finish faster", "Get top grades", "Avoid all mobile use", "Take longer to finish"], answer: 3 }
+            ]
+        },
+        'B2_Route': {
+            passage: "The transition toward a cashless society has accelerated rapidly, largely driven by the convenience of contactless mobile payments. For consumers, the appeal lies in <b>frictionless</b> transactions and the elimination of physical wallets. Retailers also benefit, as digital systems streamline accounting and reduce the risk of on-site theft. However, this shift heavily marginalizes vulnerable groups, particularly the elderly and unbanked individuals <b>who</b> rely exclusively on physical currency. Furthermore, privacy advocates warn that abandoning cash completely allows financial institutions to track and record every single purchase, effectively ending anonymous commerce.",
+            questions: [
+                { q: "What is the primary focus of the passage?", options: ["Banking history", "Stopping card theft", "How to teach the elderly to pay", "A balanced look at digital money"], answer: 3 },
+                { q: "What is one advantage digital systems give retailers?", options: ["More foot traffic", "Stops all online crime", "Protects customer privacy", "Simplifies their accounting"], answer: 3 },
+                { q: "In the fourth sentence, who does the word 'who' refer to?", options: ["Retailers", "Privacy advocates", "Wealthy business owners", "Elderly and unbanked people"], answer: 3 },
+                { q: "What does the word 'frictionless' mean in this context?", options: ["Unsafe", "Very slow", "Smooth and easy", "Expensive to use"], answer: 2 },
+                { q: "What is a likely consequence of ending anonymous commerce?", options: ["People will buy less", "Banks will lose money", "Spending will be monitored", "Cash will become popular again"], answer: 2 }
+            ]
+        },
+        'B2_Confirm': {
+            passage: "Urban agriculture is transforming cityscapes through vertical farming, where crops are <b>cultivated</b> in stacked layers within climate-controlled warehouses. Unlike traditional farming, this hydroponic method uses nutrient-rich water rather than soil, significantly reducing resource consumption. Proponents highlight that this enclosed system eliminates the need for harmful chemical pesticides. Because the food is grown directly <b>where it will be consumed</b>, transportation costs and the associated carbon emissions are drastically cut. However, the immense electricity required to artificially replicate sunlight can cancel out these environmental benefits if the local grid relies on fossil fuels.",
+            questions: [
+                { q: "What is the primary topic of the passage?", options: ["Solar power", "City pollution", "Selling fresh food", "Modern indoor farming"], answer: 3 },
+                { q: "Why does this system avoid chemical pesticides?", options: ["Water use", "It is too costly", "It is fully enclosed", "Government regulation"], answer: 2 },
+                { q: "What does the word 'cultivated' mean in the first sentence?", options: ["Sold", "Grown", "Eaten", "Thrown out"], answer: 1 },
+                { q: "What does 'where it will be consumed' refer to?", options: ["In the soil", "The warehouses", "The city itself", "The power grids"], answer: 2 },
+                { q: "What is the main environmental drawback mentioned?", options: ["Insects", "No farm jobs", "Heavy energy use", "Produce tastes bad"], answer: 2 }
+            ]
+        },
+        'C1_Route': {
+            passage: "The phenomenon of decision fatigue suggests that the human brain's capacity for self-regulation is a finite resource, steadily depleted by the sheer volume of choices made throughout the day. Unlike physical exhaustion, cognitive depletion is highly <b>insidious</b>; individuals rarely recognize they are impaired. Instead, they begin to default to the path of least resistance, <b>which</b> manifests either as impulsive risk-taking or severe <b>choice paralysis</b>. This explains why corporate executives often adopt uniform wardrobes to eliminate trivial morning decisions, thereby conserving mental bandwidth for high-stakes strategic planning. Ultimately, willpower is less an enduring personality trait than a fluctuating physiological resource.",
+            questions: [
+                { q: "What is the central argument of the text?", options: ["People are lazy", "Executives need rest", "Willpower is a limited resource", "Quick choices boost brain health"], answer: 2 },
+                { q: "What does the word 'insidious' imply about cognitive depletion?", options: ["It is loud", "It is easily fixed", "It happens unnoticed", "It causes physical pain"], answer: 2 },
+                { q: "Why do some people experience 'choice paralysis'?", options: ["They feel angry", "They lack schooling", "They enjoy taking wild risks", "Their mental energy is drained"], answer: 3 },
+                { q: "In the third sentence, what does the word 'which' refer to?", options: ["Physical exhaustion", "A corporate executive", "Defaulting to the easy path", "A fluctuating physiological resource"], answer: 2 },
+                { q: "According to the passage, how is willpower best described?", options: ["A fixed trait", "A business tactic", "An unpredictable mood", "A changeable energy supply"], answer: 3 }
+            ]
+        },
+        'C1_Confirm': {
+            passage: "The Sapir-Whorf hypothesis <b>postulates</b> that a person's native language shapes their cognitive processes, influencing what they most readily conceptualize. While extreme linguistic determinism is largely discredited, a more nuanced version retains empirical support. It suggests that language habitually directs attention toward particular features of the environment. For instance, speakers who rely on absolute directional coordinates consistently demonstrate superior spatial orientation. Conversely, lacking specific vocabulary for colour shades does not render individuals physiologically unable to see differences, but it measurably increases the cognitive effort required to categorize <b>them</b>. Ultimately, language appears to carve preferred mental pathways, subtly influencing perception.",
+            questions: [
+                { q: "What is the main topic of the passage?", options: ["Memory limits", "Language and thought", "Causes of colour blindness", "Learning to give directions"], answer: 1 },
+                { q: "What advantage do speakers using absolute coordinates have?", options: ["They read faster", "They walk more quickly", "They have better memory", "They orient themselves well"], answer: 3 },
+                { q: "What does the word 'postulates' mean in the first sentence?", options: ["Hides", "Proposes", "Disproves", "Forgets about"], answer: 1 },
+                { q: "In the fifth sentence, what does 'them' refer to?", options: ["The speakers", "Colour shades", "Mental pathways", "Directional terms"], answer: 1 },
+                { q: "What is the effect of lacking words for specific shades?", options: ["Total blindness", "Dislike of colour", "A need for glasses", "Harder to sort them"], answer: 3 }
+            ]
+        }
+    };
+
+    const routingMatrix = {
+        'B1_Route': { pass: 'B2_Route', fail: 'A2_Route' },
+        'B2_Route': { pass: 'C1_Route', fail: 'B1_Confirm' },
+        'C1_Route': { pass: 'C1_Confirm', fail: 'B2_Confirm' },
+        'A2_Route': { pass: 'A2_Confirm', fail: 'A1_Route' },
+        'A1_Route': { pass: 'A1_Confirm', fail: 'RESULT_PRE_A1' },
+        'C1_Confirm': { pass: 'RESULT_C1_HIGH', fail: 'RESULT_C1_LOW' },
+        'B2_Confirm': { pass: 'RESULT_B2_HIGH', fail: 'RESULT_B2_LOW' },
+        'B1_Confirm': { pass: 'RESULT_B1_HIGH', fail: 'RESULT_B1_LOW' },
+        'A2_Confirm': { pass: 'RESULT_A2_HIGH', fail: 'RESULT_A2_LOW' },
+        'A1_Confirm': { pass: 'RESULT_A1_HIGH', fail: 'RESULT_A1_LOW' }
+    };
+
+    const START_NODE = 'B1_Route';
+    let currentNode = START_NODE;
+    let currentQuestions = [];
+    let stage = 1;
+
+    function styleInlineCode(text) {
+        // wrap 'quoted words' in the question as <code> for emphasis
+        return text.replace(/'([^']+)'/g, '<code>$1</code>');
+    }
+
+    function startTest() {
+        document.getElementById('intro-screen').classList.add('hidden');
+        document.getElementById('test-screen').classList.remove('hidden');
+        loadNode(currentNode);
+    }
+
+    function renderPips() {
+        // estimate max depth 4; show progress generically
+        const pips = document.getElementById('pips');
+        const maxStages = 4;
+        let html = '';
+        for (let i = 1; i <= maxStages; i++) {
+            let cls = 'pip';
+            if (i < stage) cls += ' done';
+            else if (i === stage) cls += ' active';
+            html += '<span class="' + cls + '"></span>';
+        }
+        pips.innerHTML = html;
+        document.getElementById('stage-num').innerText = stage;
+    }
+
+    function loadNode(level) {
+        document.getElementById('validation-error').classList.add('hidden');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        const data = testBank[level];
+        currentQuestions = data.questions;
+        renderPips();
+
+        const pc = document.getElementById('passage-container');
+        pc.innerHTML = '<p>' + data.passage + '</p>';
+
+        let qHTML = '';
+        const letters = ['A', 'B', 'C', 'D'];
+        data.questions.forEach((qObj, index) => {
+            qHTML += '<div class="question-block">'
+                + '<div class="qhead"><span class="qnum">' + (index + 1) + '</span>'
+                + '<span class="qtext">' + styleInlineCode(qObj.q) + '</span></div>'
+                + '<div class="options">';
+            qObj.options.forEach((opt, optIndex) => {
+                qHTML += '<label class="opt" data-q="' + index + '">'
+                    + '<input type="radio" name="q' + index + '" value="' + optIndex + '">'
+                    + '<span class="dot"></span>'
+                    + '<span class="opt-letter">' + letters[optIndex] + '</span>'
+                    + '<span class="opt-body">' + opt + '</span>'
+                    + '</label>';
+            });
+            qHTML += '</div></div>';
+        });
+
+        const qc = document.getElementById('questions-container');
+        qc.innerHTML = qHTML;
+        document.getElementById('test-screen').classList.remove('fade');
+        void document.getElementById('test-screen').offsetWidth;
+        document.querySelector('#test-screen .inner').classList.add('fade');
+
+        // selection styling
+        qc.querySelectorAll('.opt').forEach(label => {
+            label.addEventListener('click', () => {
+                const q = label.getAttribute('data-q');
+                qc.querySelectorAll('.opt[data-q="' + q + '"]').forEach(l => l.classList.remove('sel'));
+                label.classList.add('sel');
+            });
+        });
+    }
+
+    function submitNode() {
+        let score = 0;
+        let allAnswered = true;
+
+        for (let i = 0; i < currentQuestions.length; i++) {
+            const selected = document.querySelector('input[name="q' + i + '"]:checked');
+            if (!selected) { allAnswered = false; break; }
+            if (parseInt(selected.value) === currentQuestions[i].answer) score++;
+        }
+
+        if (!allAnswered) {
+            document.getElementById('validation-error').classList.remove('hidden');
+            return;
+        }
+
+        const passed = score >= 3;
+        const nextStep = passed ? routingMatrix[currentNode].pass : routingMatrix[currentNode].fail;
+
+        if (nextStep.startsWith('RESULT')) {
+            showResults(nextStep);
+        } else {
+            currentNode = nextStep;
+            stage++;
+            loadNode(currentNode);
+        }
+    }
+
+    const improvementMap = {
+        'Pre-A1': {
+            sub: 'You are at the very start of your reading journey. The goal now is to build a core of high-frequency words and recognise basic information in very short texts.',
+            focus: [
+                ['Core vocabulary', 'Learn the most common 500 everyday words — numbers, days, colours, food, places — so you can recognise them instantly without translating.'],
+                ['Letter–sound links', 'Practise matching written words to their sounds, so reading short signs, labels, and menus becomes automatic.'],
+                ['Finding one fact', 'Work on locating a single piece of information in a short notice, such as a price, a time, or a name.'],
+                ['Reading short phrases', 'Move from single words to two- and three-word phrases like "open daily" or "no entry".']
+            ]
+        },
+        'A1': {
+            sub: 'You can find direct facts in short, simple texts. To reach A2, focus on understanding the purpose of a message and following short instructions.',
+            focus: [
+                ['Purpose of a text', 'Practise asking "why was this written?" — to inform, to warn, to invite — using notices, signs, and short emails.'],
+                ['Following instructions', 'Read simple step-by-step instructions (recipes, directions, forms) and put the steps in the correct order.'],
+                ['Everyday connectors', 'Learn how "because", "but", "so", and "then" link ideas, so you can follow simple reasons and sequences.'],
+                ['Wider vocabulary', 'Expand into common verbs and adjectives beyond the basics to read short personal messages with confidence.']
+            ]
+        },
+        'A2': {
+            sub: 'You handle explicit details and simple instructions well. To reach B1, work on grasping the main idea of a longer text and making basic inferences.',
+            focus: [
+                ['Main idea vs. detail', 'Practise separating the overall point of a paragraph from the supporting details around it.'],
+                ['Simple inference', 'Work on conclusions the text implies but does not state directly — what a writer suggests rather than says.'],
+                ['Pronoun reference', 'Track who or what words like "it", "they", and "this" refer to across several sentences.'],
+                ['Vocabulary in context', 'Guess the meaning of an unfamiliar word from the sentence around it, instead of stopping to look it up.']
+            ]
+        },
+        'B1': {
+            sub: 'You reliably grasp main ideas in standard texts. To reach B2, focus on weighing arguments, following abstract ideas, and reading longer, denser passages.',
+            focus: [
+                ['Argument and viewpoint', 'Identify a writer\u2019s opinion and distinguish it from fact, especially in articles that present more than one side.'],
+                ['Cause and effect', 'Follow chains of reasoning where one idea leads to another across a whole paragraph.'],
+                ['Cohesive devices', 'Understand linking words like "however", "furthermore", and "as a result" that signal how ideas connect.'],
+                ['Abstract topics', 'Read about less familiar, more abstract subjects (technology, society, economics) where the answer is not stated plainly.']
+            ]
+        },
+        'B2': {
+            sub: 'You comfortably handle implied meaning and advanced vocabulary. To reach C1, focus on complex syntax, tone, and synthesising ideas across a text.',
+            focus: [
+                ['Complex sentences', 'Unpack long sentences with multiple clauses, passives, and embedded ideas without losing the thread.'],
+                ['Tone and attitude', 'Detect a writer\u2019s tone — sceptical, ironic, cautious — from word choice rather than explicit statements.'],
+                ['Synthesis', 'Combine information from different parts of a passage to reach a conclusion the text never states directly.'],
+                ['Academic vocabulary', 'Build precise, lower-frequency vocabulary and recognise nuance between near-synonyms.']
+            ]
+        },
+        'C1': {
+            sub: 'You show strong command of complex, abstract material. To consolidate and push toward C2, focus on subtlety, nuance, and a wide range of text types.',
+            focus: [
+                ['Subtle inference', 'Read between the lines for fine distinctions, understatement, and implied judgement in sophisticated texts.'],
+                ['Stylistic nuance', 'Appreciate how register, rhetoric, and structure shape meaning across genres, from journalism to literature.'],
+                ['Idiom and connotation', 'Master idiomatic and figurative language, and the connotations that separate words of similar meaning.'],
+                ['Breadth of reading', 'Read widely across specialised and unfamiliar fields to handle any topic with ease and speed.']
+            ]
+        }
+    };
+
+    const resultsMap = {
+        'RESULT_C1_HIGH': { level: 'C1', band: 'C1', text: 'Excellent. You confirmed your level across two advanced texts, showing strong command of complex, abstract material.' },
+        'RESULT_C1_LOW':  { level: 'B2 / C1', band: 'B2', text: 'Strong work. You reached the C1 text, but performance was not consistent across both advanced passages, placing you on the upper boundary.' },
+        'RESULT_B2_HIGH': { level: 'B2', band: 'B2', text: 'Very good. You confirmed B2 across two texts, comfortably handling implied meaning and advanced vocabulary.' },
+        'RESULT_B2_LOW':  { level: 'B1 / B2', band: 'B1', text: 'Solid work. You reached the B2 level, but performance varied across the two texts, placing you on the B1–B2 boundary.' },
+        'RESULT_B1_HIGH': { level: 'B1', band: 'B1', text: 'Good job. You confirmed B1 across two texts, reliably grasping main ideas and context clues in standard material.' },
+        'RESULT_B1_LOW':  { level: 'A2 / B1', band: 'A2', text: 'You reached the B1 level, but performance varied. You are transitioning from basic fact-finding to independent reading.' },
+        'RESULT_A2_HIGH': { level: 'A2', band: 'A2', text: 'You confirmed A2 across two texts, accurately extracting explicit details and following standard instructions.' },
+        'RESULT_A2_LOW':  { level: 'A1 / A2', band: 'A1', text: 'You reached the A2 level, but performance varied across the two texts, placing you on the A1–A2 boundary.' },
+        'RESULT_A1_HIGH': { level: 'A1', band: 'A1', text: 'You confirmed A1 across two texts, reliably identifying basic nouns, times, and direct information.' },
+        'RESULT_A1_LOW':  { level: 'Pre-A1 / A1', band: 'Pre-A1', text: 'You handled a basic A1 text, but performance varied on the second. Keep building foundational vocabulary.' },
+        'RESULT_PRE_A1':  { level: 'Pre-A1', band: 'Pre-A1', text: 'Keep practicing. Focus on foundational vocabulary and finding direct facts in short texts.' }
+    };
+
+    function showResults(resultCode) {
+        document.getElementById('test-screen').classList.add('hidden');
+        const rs = document.getElementById('results-screen');
+        rs.classList.remove('hidden');
+        rs.classList.add('fade');
+
+        const finalData = resultsMap[resultCode];
+        document.getElementById('final-level').innerText = finalData.level;
+        document.getElementById('feedback-text').innerText = finalData.text;
+
+        const order = ['Pre-A1', 'A1', 'A2', 'B1', 'B2', 'C1'];
+        const scale = document.getElementById('scale');
+        scale.innerHTML = order.map(s =>
+            '<span class="step' + (s === finalData.band ? ' on' : '') + '">' + s + '</span>'
+        ).join('');
+
+        const imp = improvementMap[finalData.band];
+        document.getElementById('improve-sub').innerText = imp.sub;
+        document.getElementById('focus-list').innerHTML = imp.focus.map((f, i) =>
+            '<li><span class="fnum">' + (i + 1) + '</span>'
+            + '<span class="fbody"><b>' + f[0] + '.</b> <span>' + f[1] + '</span></span></li>'
+        ).join('');
+    }
+
+    function restart() {
+        currentNode = START_NODE;
+        stage = 1;
+        document.getElementById('results-screen').classList.add('hidden');
+        document.getElementById('test-screen').classList.remove('hidden');
+        loadNode(currentNode);
+    }
+</script>
+
+</body>
+</html>
+
+```
