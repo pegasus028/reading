@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CEFR Adaptive Reading Assessment</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --surface: #ffffff;
+            --background: #f3f4f6;
+            --text-main: #1f2937;
+            --text-muted: #4b5563;
+            --border: #e5e7eb;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--background);
+            color: var(--text-main);
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: var(--surface);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        h1, h2, h3 { color: var(--text-main); }
+        .passage-box {
+            background-color: #f8fafc;
+            border-left: 4px solid var(--primary);
+            padding: 20px;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+        }
+        .question-block {
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+        .question-block p { font-weight: 600; }
+        .options label {
+            display: block;
+            margin-bottom: 10px;
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #f8fafc;
+            border: 1px solid var(--border);
+            transition: background 0.2s;
+        }
+        .options label:hover { background-color: #e2e8f0; }
+        input[type="radio"] { margin-right: 10px; }
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            font-size: 1.1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            display: block;
+            width: 100%;
+            margin-top: 20px;
+        }
+        button:hover { background-color: #1d4ed8; }
+        .hidden { display: none; }
+        .error { color: #dc2626; font-size: 0.9rem; margin-top: 5px; font-weight: bold; }
+        #results-screen { text-align: center; }
+        .final-score { font-size: 3.5rem; font-weight: bold; color: var(--primary); margin: 20px 0; }
+        .progress-indicator { text-align: right; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Intro Screen -->
+    <div id="intro-screen">
+        <h1>Reading Assessment</h1>
+        <p>This is an adaptive reading test. The difficulty of the next text will change based on how accurately you answer.</p>
+        <p>Please read each text carefully and answer all 5 questions before moving on. Do not use outside resources.</p>
+        <button onclick="startTest()">Start Assessment</button>
+    </div>
+
+    <!-- Test Screen -->
+    <div id="test-screen" class="hidden">
+        <div class="progress-indicator" id="progress-text">Passage Assessment</div>
+        <div id="passage-container" class="passage-box"></div>
+        <div id="questions-container"></div>
+        <p id="validation-error" class="error hidden">Please answer all 5 questions before continuing.</p>
+        <button id="next-btn" onclick="submitNode()">Next Passage</button>
+    </div>
+
+    <!-- Results Screen -->
+    <div id="results-screen" class="hidden">
+        <h2>Assessment Complete</h2>
+        <p>Based on your performance across multiple texts, your confirmed reading level is:</p>
+        <div id="final-level" class="final-score"></div>
+        <p id="feedback-text"></p>
+    </div>
+</div>
+
+<script>
+    const testBank = {
+        'A1_Route': {
+            passage: "Welcome to the Grand Hotel. Breakfast is served in the dining room from seven until ten in the morning. Please do not take food to your bedrooms. The swimming pool is open all day, but children must have an adult with them. If you need clean towels, please call the front desk. Enjoy your stay!",
+            questions: [
+                { q: "What is this text?", options: ["A map", "A menu", "Hotel rules", "A train ticket"], answer: 2 },
+                { q: "When does breakfast end?", options: ["7:00 AM", "10:00 AM", "At noon today", "Late in the day"], answer: 1 },
+                { q: "What must children have at the pool?", options: ["A toy", "A towel", "An adult", "Some warm food"], answer: 2 },
+                { q: "In the text, who does the word 'them' refer to?", options: ["Adults", "The towels", "The children", "People working"], answer: 2 },
+                { q: "What does the word 'clean' mean in this text?", options: ["Wet", "Cold", "Not dirty", "Very expensive"], answer: 2 }
+            ]
+        },
+        'A1_Confirm': {
+            passage: "The city library is closing early today. We will close at 4:00 PM because of heavy snow. All afternoon reading groups are canceled. Please return your books to the box outside the front door. We will open again tomorrow morning at 9:00 AM. Thank you and stay safe!",
+            questions: [
+                { q: "What is the main purpose of this message?", options: ["A storm", "Buying books", "Closing early", "Morning groups"], answer: 2 },
+                { q: "What time will the library close today?", options: ["4:00 PM", "Next day", "Afternoon", "At 9:00 AM"], answer: 0 },
+                { q: "What should people do with their items?", options: ["Keep them", "Bring inside", "Give to staff", "Put in the box"], answer: 3 },
+                { q: "Who does the word 'We' refer to in the text?", options: ["The snow", "The library", "Library users", "The front door"], answer: 1 },
+                { q: "What does the word 'canceled' mean here?", options: ["Late", "Moved", "Stopped", "Finished"], answer: 2 }
+            ]
+        },
+        'A2_Route': {
+            passage: "All staff must attend a short safety meeting on Wednesday afternoon at 2:00 PM. We will meet in the staff kitchen because the main conference room is currently being painted. The manager will explain the new fire alarm system. Please bring a pen to sign the attendance sheet. You do not need to bring your laptops. If you are sick on Wednesday, you must email Sarah before noon.",
+            questions: [
+                { q: "What is the purpose of this text?", options: ["Buy paint", "Test an alarm", "Meeting notice", "Laptop complaints"], answer: 2 },
+                { q: "Where will the meeting take place?", options: ["At home", "In the kitchen", "Near front door", "In conference room"], answer: 1 },
+                { q: "Why was the location of the meeting changed?", options: ["Locked", "Too cold", "Being painted", "Alarms ringing"], answer: 2 },
+                { q: "In the final sentence, who is 'Sarah'?", options: ["A cook", "A painter", "Someone to email", "The kitchen cleaner"], answer: 2 },
+                { q: "What does the word 'currently' mean in this text?", options: ["Later", "Right now", "In the past", "Very quickly"], answer: 1 }
+            ]
+        },
+        'A2_Confirm': {
+            passage: "Hi David. I left my blue winter jacket in your car yesterday. I think it is in the back seat. My house keys are in the pocket, so I cannot get inside my apartment. Can you please check your car and call me? I can walk to your office to get it this afternoon. Thanks, Sarah.",
+            questions: [
+                { q: "What is the main topic of this message?", options: ["Lost jacket", "Buying a car", "Walking to work", "Fixing apartment"], answer: 0 },
+                { q: "Where does the writer think her keys are?", options: ["At home", "In the car", "In a pocket", "At the office"], answer: 2 },
+                { q: "Who lost the item?", options: ["David", "Her boss", "The writer", "Work friends"], answer: 2 },
+                { q: "In the final sentence, what does 'it' refer to?", options: ["The car", "The keys", "The jacket", "The building"], answer: 2 },
+                { q: "What does the phrase 'get inside' mean here?", options: ["See", "Walk", "Enter", "Clean up"], answer: 2 }
+            ]
+        },
+        'B1_Route': {
+            passage: "Urban beekeeping has become a popular hobby for city residents who want to support local ecosystems. Rather than needing a large farm, people are placing small wooden hives on apartment balconies and rooftops. Bees travel up to three miles to find nectar in city parks and window boxes. While some neighbors worry about bee stings, experienced keepers state that honeybees are generally calm and only attack if they feel their hive is threatened. This practice not only provides owners with fresh honey but also helps pollinate urban gardens.",
+            questions: [
+                { q: "What is the text primarily about?", options: ["Selling honey", "City beekeeping", "Designing gardens", "Treating bee stings"], answer: 1 },
+                { q: "How far will the bees fly to find food?", options: ["Three miles", "Just the roof", "Across country", "Outside the hive"], answer: 0 },
+                { q: "What can we guess about urban gardens based on the text?", options: ["Very dry", "Benefit from bees", "Are mostly crowded", "Have zero live plants"], answer: 1 },
+                { q: "What does the word 'their' refer to in the fourth sentence?", options: ["The parks", "The honeybees", "City neighbors", "The exact keepers"], answer: 1 },
+                { q: "What does the word 'threatened' mean in this context?", options: ["Lost", "Asleep", "In danger", "Extremely hungry"], answer: 2 }
+            ]
+        },
+        'B1_Confirm': {
+            passage: "Recent studies suggest that taking micro-breaks during intense study sessions can significantly improve focus. A micro-break is a brief pause, lasting between thirty seconds and five minutes, taken every hour. Instead of checking social media, experts advise students to stand up, stretch, or look at a distant object. Doing this reduces eye strain and prevents mental fatigue. While some students worry that frequent pauses will disrupt their workflow, researchers found the opposite to be true. Those who implemented the strategy completed their assignments faster than those who studied continuously without stopping.",
+            questions: [
+                { q: "What is the main purpose of the text?", options: ["Eye exercises", "Warning students", "Value of micro breaks", "Banning social networks"], answer: 2 },
+                { q: "According to the text, how long should a micro-break last?", options: ["One hour", "Thirty minutes", "Up to five minutes", "Exactly thirty seconds"], answer: 2 },
+                { q: "In the fourth sentence, what does the word 'this' refer to?", options: ["Eye strain", "Standing up", "Mental fatigue", "Checking phones"], answer: 1 },
+                { q: "What does the word 'implemented' mean in the final sentence?", options: ["Failed", "Ignored", "Used or applied", "Worried about deeply"], answer: 2 },
+                { q: "What can be inferred about students who study continuously?", options: ["Finish faster", "Get better grades", "Take longer to finish", "Never use mobile devices"], answer: 2 }
+            ]
+        },
+        'B2_Route': {
+            passage: "The transition toward a cashless society has accelerated rapidly, largely driven by the convenience of contactless mobile payments. For consumers, the appeal lies in frictionless transactions and the elimination of physical wallets. Retailers also benefit, as digital systems streamline accounting processes and reduce the risk of on-site theft. However, this shift heavily marginalizes vulnerable populations, particularly the elderly and unbanked individuals who rely exclusively on physical currency. Furthermore, privacy advocates warn that abandoning cash completely allows financial institutions to track and record every single purchase, effectively ending anonymous commerce.",
+            questions: [
+                { q: "What is the primary focus of the passage?", options: ["Banking history", "Stopping phone theft", "Pros and cons of digital money", "Teaching the elderly smartphone use"], answer: 2 },
+                { q: "According to the passage, what is one advantage digital systems provide to retailers?", options: ["More traffic", "Stops online crime", "Simplifies accounting", "Protects customer privacy"], answer: 2 },
+                { q: "In the fourth sentence, who does the word 'who' refer to?", options: ["Retailers", "Privacy advocates", "Wealthy business owners", "Elderly and unbanked people"], answer: 3 },
+                { q: "What does the word 'frictionless' mean in this context?", options: ["Unsafe", "Very slow", "Smooth and easy", "Costing a lot of money"], answer: 2 },
+                { q: "What is a likely consequence of ending anonymous commerce?", options: ["Banks will lose money", "People will buy fewer goods", "Cash will become more popular", "Personal spending habits will be monitored"], answer: 3 }
+            ]
+        },
+        'B2_Confirm': {
+            passage: "Urban agriculture is transforming cityscapes globally through vertical farming, where crops are cultivated in stacked layers within climate-controlled warehouses. Unlike traditional farming, this hydroponic method uses nutrient-rich water rather than soil, significantly reducing resource consumption. Proponents highlight that this enclosed system eliminates the need for harmful chemical pesticides. Because the food is grown directly where it will be consumed, transportation costs and associated carbon emissions are drastically cut. However, the immense electricity required to artificially replicate sunlight sometimes cancels out the environmental benefits if the local grid relies on fossil fuels.",
+            questions: [
+                { q: "What is the primary topic of the passage?", options: ["Solar energy", "City pollution", "Selling fresh food", "Modern indoor farming"], answer: 3 },
+                { q: "Why does this system avoid chemical pesticides?", options: ["Water use", "Too costly", "Enclosed spaces", "Government rules"], answer: 2 },
+                { q: "What does the word 'cultivated' mean in the first sentence?", options: ["Sold", "Grown", "Consumed", "Thrown away"], answer: 1 },
+                { q: "In the text, what does 'where it will be consumed' refer to?", options: ["In soil", "The city", "Warehouses", "Local grids"], answer: 1 },
+                { q: "What is a major environmental drawback mentioned?", options: ["Bugs", "No farm workers", "High energy usage", "Bad tasting produce"], answer: 2 }
+            ]
+        },
+        'C1_Route': {
+            passage: "The phenomenon of decision fatigue suggests that the human brain's capacity for self-regulation is a finite resource, steadily depleted by the sheer volume of choices made throughout the day. Unlike physical exhaustion, cognitive depletion is highly insidious; individuals rarely recognize they are impaired. Instead, they begin to default to the path of least resistance, which manifests either as impulsive risk-taking or severe choice paralysis. This explains why corporate executives often adopt uniform wardrobes to eliminate morning sartorial decisions, thereby conserving mental bandwidth for high-stakes strategic planning. Ultimately, willpower is less an enduring personality trait and more a fluctuating physiological battery.",
+            questions: [
+                { q: "What is the central argument of the text?", options: ["People are lazy", "Executives should rest", "Willpower is a limited resource", "Making fast choices improves brain health"], answer: 2 },
+                { q: "What does the word 'insidious' imply about cognitive depletion?", options: ["Very loud", "Easily fixed", "Happens unnoticed", "Causes physical pain"], answer: 2 },
+                { q: "Why do some people experience 'choice paralysis'?", options: ["They are angry", "They lack education", "Their mental energy is drained", "They enjoy taking dangerous risks"], answer: 2 },
+                { q: "In the third sentence, what does the word 'which' refer to?", options: ["Physical exhaustion", "A corporate executive", "The path of least resistance", "A fluctuating physiological battery"], answer: 2 },
+                { q: "According to the passage, how is willpower best described?", options: ["A permanent trait", "A corporate strategy", "An unpredictable emotion", "A changeable energy supply"], answer: 3 }
+            ]
+        },
+        'C1_Confirm': {
+            passage: "The Sapir-Whorf hypothesis postulates that a person’s native language dictates their cognitive processes, effectively limiting what they can conceptualize. While extreme linguistic determinism is largely discredited, a nuanced version maintains empirical support. It suggests language habitually directs attention toward specific environmental features. For instance, speakers relying on absolute directional coordinates consistently demonstrate superior spatial orientation. Conversely, lacking specific vocabulary for color shades does not render individuals physiologically blind to differences, but measurably increases the cognitive load required to categorize them. Ultimately, language carves preferred cognitive pathways, subtly influencing reality perception.",
+            questions: [
+                { q: "What is the main topic of the passage?", options: ["Memory limits", "Language and thought", "Color blindness causes", "Learning new directions"], answer: 1 },
+                { q: "What advantage do speakers using absolute coordinates possess?", options: ["Read faster", "Walk quickly", "Better memory", "Superior orientation"], answer: 3 },
+                { q: "What does the word 'postulates' mean in the first sentence?", options: ["Hides", "Claims", "Forgets", "Disproves"], answer: 1 },
+                { q: "In the fifth sentence, what does 'them' refer to?", options: ["The speakers", "Distinct colors", "Heavy cognitive load", "Directional terms"], answer: 1 },
+                { q: "What is the effect of lacking vocabulary for specific shades?", options: ["Cannot see", "Hate bright items", "Harder to remember", "Need strong glasses"], answer: 2 }
+            ]
+        }
+    };
+
+    const routingMatrix = {
+        'B1_Route': { pass: 'B2_Route', fail: 'A2_Route' },
+        
+        'B2_Route': { pass: 'C1_Route', fail: 'B1_Confirm' },
+        'C1_Route': { pass: 'C1_Confirm', fail: 'B2_Confirm' },
+        
+        'A2_Route': { pass: 'A2_Confirm', fail: 'A1_Route' },
+        'A1_Route': { pass: 'A1_Confirm', fail: 'RESULT_PRE_A1' },
+
+        'C1_Confirm': { pass: 'RESULT_C1_HIGH', fail: 'RESULT_C1_LOW' },
+        'B2_Confirm': { pass: 'RESULT_B2_HIGH', fail: 'RESULT_B2_LOW' },
+        'B1_Confirm': { pass: 'RESULT_B1_HIGH', fail: 'RESULT_B1_LOW' },
+        'A2_Confirm': { pass: 'RESULT_A2_HIGH', fail: 'RESULT_A2_LOW' },
+        'A1_Confirm': { pass: 'RESULT_A1_HIGH', fail: 'RESULT_A1_LOW' }
+    };
+
+    let currentNode = 'B1_Route';
+    let currentQuestions = [];
+
+    function startTest() {
+        document.getElementById('intro-screen').classList.add('hidden');
+        document.getElementById('test-screen').classList.remove('hidden');
+        loadNode(currentNode);
+    }
+
+    function loadNode(level) {
+        document.getElementById('validation-error').classList.add('hidden');
+        window.scrollTo(0, 0);
+        
+        const data = testBank[level];
+        currentQuestions = data.questions;
+        
+        document.getElementById('passage-container').innerHTML = `<p>${data.passage}</p>`;
+        
+        let qHTML = '';
+        data.questions.forEach((qObj, index) => {
+            qHTML += `<div class="question-block">
+                        <p>${index + 1}. ${qObj.q}</p>
+                        <div class="options">`;
+            qObj.options.forEach((opt, optIndex) => {
+                qHTML += `<label>
+                            <input type="radio" name="q${index}" value="${optIndex}">
+                            ${opt}
+                          </label>`;
+            });
+            qHTML += `</div></div>`;
+        });
+        
+        document.getElementById('questions-container').innerHTML = qHTML;
+    }
+
+    function submitNode() {
+        let score = 0;
+        let allAnswered = true;
+
+        for (let i = 0; i < currentQuestions.length; i++) {
+            const selected = document.querySelector(`input[name="q${i}"]:checked`);
+            if (!selected) {
+                allAnswered = false;
+                break;
+            }
+            if (parseInt(selected.value) === currentQuestions[i].answer) {
+                score++;
+            }
+        }
+
+        if (!allAnswered) {
+            document.getElementById('validation-error').classList.remove('hidden');
+            return;
+        }
+
+        const passed = score >= 3;
+        const nextStep = passed ? routingMatrix[currentNode].pass : routingMatrix[currentNode].fail;
+
+        if (nextStep.startsWith('RESULT')) {
+            showResults(nextStep);
+        } else {
+            currentNode = nextStep;
+            loadNode(currentNode);
+        }
+    }
+
+    function showResults(resultCode) {
+        document.getElementById('test-screen').classList.add('hidden');
+        document.getElementById('results-screen').classList.remove('hidden');
+        
+        const resultsMap = {
+            'RESULT_C1_HIGH': { level: 'C1', text: 'Excellent. You demonstrated complete mastery of complex, abstract texts.' },
+            'RESULT_C1_LOW': { level: 'B2 / C1', text: 'Strong work. You can handle abstract concepts, but advanced academic syntax still presents a challenge.' },
+            'RESULT_B2_HIGH': { level: 'B2', text: 'Very good. You comfortably synthesize implied meaning and advanced vocabulary.' },
+            'RESULT_B2_LOW': { level: 'B1 / B2', text: 'Solid effort. You are operating exactly on the upper-intermediate boundary.' },
+            'RESULT_B1_HIGH': { level: 'B1', text: 'Good job. You successfully grasp main ideas and basic context clues in standard texts.' },
+            'RESULT_B1_LOW': { level: 'A2 / B1', text: 'You are successfully transitioning from basic fact-finding to independent reading.' },
+            'RESULT_A2_HIGH': { level: 'A2', text: 'You can accurately extract explicit details and follow standard instructions.' },
+            'RESULT_A2_LOW': { level: 'A1 / A2', text: 'You have a good grasp of foundational vocabulary and literal facts.' },
+            'RESULT_A1_HIGH': { level: 'A1', text: 'You can successfully identify basic nouns, times, and direct information.' },
+            'RESULT_A1_LOW': { level: 'Pre-A1', text: 'Keep practicing! Focus on foundational vocabulary and finding direct facts in short texts.' },
+            'RESULT_PRE_A1': { level: 'Pre-A1', text: 'Keep practicing! Focus on foundational vocabulary and finding direct facts in short texts.' }
+        };
+
+        const finalData = resultsMap[resultCode];
+        document.getElementById('final-level').innerText = finalData.level;
+        document.getElementById('feedback-text').innerText = finalData.text;
+    }
+</script>
+
+</body>
+</html>
